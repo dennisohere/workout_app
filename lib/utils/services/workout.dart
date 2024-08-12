@@ -9,8 +9,10 @@ import 'package:gainz/domain/repositories/workout_session_repository.dart';
 import 'package:gainz/domain/usecases/workout.dart';
 import 'package:gainz/utils/di/injector.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:logger/logger.dart';
 
 import '../../presentation/widgets/pose_painter.dart';
+import '../workout_detectors/jumping_jack.dart';
 
 enum WorkoutState {
   waiting, // period to wait for pose detection to fully kick in
@@ -21,25 +23,20 @@ enum WorkoutState {
 
 class WorkoutService {
   CameraController? _controller;
-  PoseDetector? _poseDetector;
   bool _started = false;
   int _repCount = 0;
-  List<bool> _bodyMovements = [];
-  List<bool> _legsCycle = [];
+
   DateTime? _startedAt;
   DateTime? _endedAt;
   final int waitTimeInSeconds;
+  JumpingJackDetector detector = JumpingJackDetector();
 
   late CameraDescription _selectedCamera;
 
-  PoseDetector? get poseDetector => _poseDetector;
-
   int get repCount => _repCount;
 
-  List<bool> get bodyMovements => _bodyMovements;
-
-  List<bool> get legsCycle => _legsCycle;
-
+  // List<bool> get bodyMovements => _bodyMovements;
+  // List<bool> get legsCycle => _legsCycle;
   CameraController? get controller => _controller;
 
   final _orientations = {
@@ -51,15 +48,15 @@ class WorkoutService {
 
   final Function(int) onCountUpdated;
   final Function(CustomPaint) onPaintUpdated;
-  final Function(CameraController) onReady;
+  final Function(CameraController) onCameraReady;
   final Function(WorkoutState) onStateChanged;
 
   WorkoutService({
     required this.onCountUpdated,
     required this.onPaintUpdated,
-    required this.onReady,
+    required this.onCameraReady,
     required this.onStateChanged,
-    this.waitTimeInSeconds = 5,
+    this.waitTimeInSeconds = 10,
   }) {
     _initializeCameraController();
   }
@@ -75,7 +72,6 @@ class WorkoutService {
   Future stopWorkout() async {
     _started = false;
     _endedAt = DateTime.now();
-    _bodyMovements = [];
     onStateChanged.call(WorkoutState.stopped);
     _controller!.stopImageStream();
     await _saveWorkout();
@@ -97,7 +93,7 @@ class WorkoutService {
   }
 
   dispose() {
-    poseDetector?.close();
+    detector.dispose();
     controller?.dispose();
   }
 
@@ -119,14 +115,14 @@ class WorkoutService {
 
     _controller = CameraController(
       _selectedCamera,
-      ResolutionPreset.max,
+      ResolutionPreset.medium,
       enableAudio: false,
       imageFormatGroup: Platform.isAndroid
           ? ImageFormatGroup.nv21 // for Android
           : ImageFormatGroup.bgra8888, // for iOS
     );
     _controller!.initialize().then((_) {
-      onReady.call(_controller!);
+      onCameraReady.call(_controller!);
     }).catchError((Object e) {
       if (e is CameraException) {
         switch (e.code) {
@@ -141,83 +137,29 @@ class WorkoutService {
     });
   }
 
-  _detectHandsMovement(Pose pose) {
-    bool cycleComplete = false;
-    final rightWristLandmark = pose.landmarks[PoseLandmarkType.rightWrist];
-    final rightEyeLandmark = pose.landmarks[PoseLandmarkType.rightEye];
-
-    final leftWristLandmark = pose.landmarks[PoseLandmarkType.leftWrist];
-    final leftEyeLandmark = pose.landmarks[PoseLandmarkType.leftEye];
-
-    bool rightHandUp = rightWristLandmark!.y < rightEyeLandmark!.y;
-    bool leftHandUp = leftWristLandmark!.y < leftEyeLandmark!.y;
-
-    final allHandsUp = rightHandUp && leftHandUp;
-
-    final rightKneeLandmark = pose.landmarks[PoseLandmarkType.rightKnee];
-    final leftKneeLandmark = pose.landmarks[PoseLandmarkType.leftKnee];
-
-    final kneeDistance =
-        _computeDistance(point2: leftKneeLandmark!, point1: rightKneeLandmark!)
-            .toInt();
-
-    final kneesApart = kneeDistance >= 140;
-
-    final bodyMoved = kneesApart && allHandsUp;
-
-    if (bodyMovements.isNotEmpty) {
-      if (bodyMovements.last != bodyMoved) {
-        cycleComplete = true;
-        bodyMovements.add(bodyMoved);
-      }
-    } else {
-      bodyMovements.add(bodyMoved);
-    }
-
-    return cycleComplete;
-  }
-
-  double _computeDistance(
-      {required PoseLandmark point1, required PoseLandmark point2}) {
-    // Distance = √[(x₂ - x₁)² + (y₂ - y₁)² ]
-    final dx = point1.x - point2.x;
-    final dy = point1.y - point2.y;
-    return sqrt((dx * dx) + (dy * dy));
-  }
-
-  _detectWorkout(List<Pose> poses) {
-    for (Pose pose in poses) {
-      final handsDetected = _detectHandsMovement(pose);
-
-      if (handsDetected) {
-        _updateCounter();
-      }
-    }
-  }
-
   _updateCounter() {
-    _repCount = bodyMovements.length ~/ 2;
+    _repCount++;
     onCountUpdated.call(_repCount);
   }
 
   _onImageAvailable(CameraImage image) async {
     final inputImage = await _initInputImage(image);
-    final options = PoseDetectorOptions();
-    _poseDetector = PoseDetector(options: options);
-
-    // Logger().d(['input image', inputImage]);
 
     if (inputImage == null) return null;
-    if (_poseDetector == null) return null;
 
-    final List<Pose> poses = await _poseDetector!.processImage(inputImage);
-
-    _detectWorkout(poses);
-
-    final painter = PosePainter(poses, inputImage.metadata!.size,
-        inputImage.metadata!.rotation, _selectedCamera.lensDirection);
-
-    onPaintUpdated.call(CustomPaint(painter: painter));
+    await detector.detectWorkoutPose(
+      inputImage: inputImage,
+      onPoseFound: (isJumpingJack) {
+        if (isJumpingJack) {
+          _updateCounter();
+        }
+      },
+      onProcessedImage: (poses) {
+        final painter = PosePainter(poses, inputImage.metadata!.size,
+            inputImage.metadata!.rotation, _selectedCamera.lensDirection);
+        onPaintUpdated.call(CustomPaint(painter: painter));
+      },
+    );
   }
 
   Future<InputImage?> _initInputImage(CameraImage image) async {

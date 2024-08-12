@@ -37,7 +37,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       onPaintUpdated: (paint){
         customPaintNotifier.value = paint;
       },
-      onReady: (camController){
+      onCameraReady: (camController){
         controller = camController;
         setState(() {});
       },
@@ -105,7 +105,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 if(workoutState != WorkoutState.waiting) ...[
                   ValueListenableBuilder(valueListenable: repCount, builder: (_, count, child){
                     return Text('$count')
-                        .fontSize(170)
+                        .fontSize(100)
                         .textColor(Colors.white)
                         .padding(all: 70)
                         .decorated(
@@ -246,10 +246,22 @@ class _WaitCountdownState extends State<_WaitCountdown> {
 
   @override
   Widget build(BuildContext context) {
-    return Text('Ready...$count')
-        .fontSize(100)
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text('Ready...$count')
+            .fontSize(60)
+            .textColor(Colors.white),
+        const Text('Ensure your full body is visible on screen')
+            .fontSize(25)
         .textColor(Colors.white)
-        .padding(all: 70);
+        .textAlignment(TextAlign.center)
+        .padding(all: 5)
+            .backgroundColor(Colors.amber.shade800.withOpacity(0.9))
+      ],
+    )
+        .padding(all: 50);
   }
 
 
