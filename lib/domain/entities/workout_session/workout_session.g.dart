@@ -12,6 +12,7 @@ _$WorkoutSessionEntityImpl _$$WorkoutSessionEntityImplFromJson(
       repCount: (json['repCount'] as num).toInt(),
       startedAt: DateTime.parse(json['startedAt'] as String),
       secondsElapsed: (json['secondsElapsed'] as num).toInt(),
+      id: json['id'] as String?,
     );
 
 Map<String, dynamic> _$$WorkoutSessionEntityImplToJson(
@@ -20,4 +21,5 @@ Map<String, dynamic> _$$WorkoutSessionEntityImplToJson(
       'repCount': instance.repCount,
       'startedAt': instance.startedAt.toIso8601String(),
       'secondsElapsed': instance.secondsElapsed,
+      'id': instance.id,
     };

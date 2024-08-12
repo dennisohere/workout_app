@@ -12,6 +12,13 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
 import '../../presentation/widgets/pose_painter.dart';
 
+enum WorkoutState {
+  waiting, // period to wait for pose detection to fully kick in
+  started,
+  ready,
+  stopped
+}
+
 class WorkoutService {
   CameraController? _controller;
   PoseDetector? _poseDetector;
@@ -21,6 +28,7 @@ class WorkoutService {
   List<bool> _legsCycle = [];
   DateTime? _startedAt;
   DateTime? _endedAt;
+  final int waitTimeInSeconds;
 
   late CameraDescription _selectedCamera;
 
@@ -44,13 +52,14 @@ class WorkoutService {
   final Function(int) onCountUpdated;
   final Function(CustomPaint) onPaintUpdated;
   final Function(CameraController) onReady;
-  final Function(bool) onWorkoutStarted;
+  final Function(WorkoutState) onStateChanged;
 
   WorkoutService({
     required this.onCountUpdated,
     required this.onPaintUpdated,
     required this.onReady,
-    required this.onWorkoutStarted,
+    required this.onStateChanged,
+    this.waitTimeInSeconds = 5,
   }) {
     _initializeCameraController();
   }
@@ -61,22 +70,29 @@ class WorkoutService {
     } else {
       startWorkout();
     }
-    onWorkoutStarted.call(_started);
   }
 
   Future stopWorkout() async {
     _started = false;
     _endedAt = DateTime.now();
+    _bodyMovements = [];
+    onStateChanged.call(WorkoutState.stopped);
     _controller!.stopImageStream();
     await _saveWorkout();
   }
 
   Future startWorkout() async {
+    _repCount = 0;
+    onCountUpdated.call(0);
+    _controller!.startImageStream(_onImageAvailable);
+    onStateChanged.call(WorkoutState.waiting);
+    await Future.delayed(Duration(seconds: waitTimeInSeconds));
+
     _started = true;
     _startedAt = DateTime.now();
-    _repCount = 0;
-    onCountUpdated(0);
-    _controller!.startImageStream(_onImageAvailable);
+
+    onStateChanged.call(WorkoutState.started);
+
     debugPrint('rep started!!!!!!!!');
   }
 
@@ -181,7 +197,7 @@ class WorkoutService {
 
   _updateCounter() {
     _repCount = bodyMovements.length ~/ 2;
-    onCountUpdated.call(repCount);
+    onCountUpdated.call(_repCount);
   }
 
   _onImageAvailable(CameraImage image) async {

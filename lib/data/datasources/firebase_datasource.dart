@@ -44,8 +44,22 @@ class FirebaseDatasource implements Datasource {
     
     return (await db.collection('workouts')
         .where("userId", isEqualTo: fbAuth.currentUser!.uid)
-        .get()).docs.map<WorkoutSessionEntity>((doc) => WorkoutSessionEntity.fromJson(doc.data()))
-        .toList();
+        .orderBy('startedAt', descending: true)
+        .get()).docs.map<WorkoutSessionEntity>((doc) => WorkoutSessionEntity.fromJson({
+      ...doc.data(),
+      'id': doc.id
+    })).toList();
+  }
+
+  @override
+  Future<void> deleteWorkout(String id) async {
+    final fbAuth = FirebaseAuth.instance;
+
+    if(fbAuth.currentUser == null) return ;
+
+    final db = FirebaseFirestore.instance;
+
+    db.collection('workouts').doc(id).delete();
   }
 
 }

@@ -27,7 +27,7 @@ class AppRouter extends RootStackRouter {
         }
       })
     ]),
-    AutoRoute(page: HomeRoute.page),
+    AutoRoute(page: HomeRoute.page, maintainState: false),
     AutoRoute(page: WorkoutRoute.page),
   ];
 }

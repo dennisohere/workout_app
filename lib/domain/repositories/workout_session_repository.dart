@@ -7,5 +7,7 @@ abstract class WorkoutSessionRepository {
 
   Future<List<WorkoutSessionEntity>> loadWorkouts();
 
+  Future<void> deleteWorkout(String id);
+
 
 }

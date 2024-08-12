@@ -15,6 +15,7 @@ class WorkoutSessionEntity extends Equatable with _$WorkoutSessionEntity {
     required int repCount,
     required DateTime startedAt,
     required int secondsElapsed,
+    String? id,
   }) = _WorkoutSessionEntity;
 
 

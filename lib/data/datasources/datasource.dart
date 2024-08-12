@@ -8,4 +8,6 @@ abstract class Datasource {
 
   Future<void> saveWorkout(WorkoutSessionEntity workoutSession);
 
+  Future<void> deleteWorkout(String id);
+
 }

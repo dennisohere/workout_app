@@ -23,6 +23,7 @@ mixin _$WorkoutSessionEntity {
   int get repCount => throw _privateConstructorUsedError;
   DateTime get startedAt => throw _privateConstructorUsedError;
   int get secondsElapsed => throw _privateConstructorUsedError;
+  String? get id => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -36,7 +37,7 @@ abstract class $WorkoutSessionEntityCopyWith<$Res> {
           $Res Function(WorkoutSessionEntity) then) =
       _$WorkoutSessionEntityCopyWithImpl<$Res, WorkoutSessionEntity>;
   @useResult
-  $Res call({int repCount, DateTime startedAt, int secondsElapsed});
+  $Res call({int repCount, DateTime startedAt, int secondsElapsed, String? id});
 }
 
 /// @nodoc
@@ -56,6 +57,7 @@ class _$WorkoutSessionEntityCopyWithImpl<$Res,
     Object? repCount = null,
     Object? startedAt = null,
     Object? secondsElapsed = null,
+    Object? id = freezed,
   }) {
     return _then(_value.copyWith(
       repCount: null == repCount
@@ -70,6 +72,10 @@ class _$WorkoutSessionEntityCopyWithImpl<$Res,
           ? _value.secondsElapsed
           : secondsElapsed // ignore: cast_nullable_to_non_nullable
               as int,
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -82,7 +88,7 @@ abstract class _$$WorkoutSessionEntityImplCopyWith<$Res>
       __$$WorkoutSessionEntityImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int repCount, DateTime startedAt, int secondsElapsed});
+  $Res call({int repCount, DateTime startedAt, int secondsElapsed, String? id});
 }
 
 /// @nodoc
@@ -99,6 +105,7 @@ class __$$WorkoutSessionEntityImplCopyWithImpl<$Res>
     Object? repCount = null,
     Object? startedAt = null,
     Object? secondsElapsed = null,
+    Object? id = freezed,
   }) {
     return _then(_$WorkoutSessionEntityImpl(
       repCount: null == repCount
@@ -113,6 +120,10 @@ class __$$WorkoutSessionEntityImplCopyWithImpl<$Res>
           ? _value.secondsElapsed
           : secondsElapsed // ignore: cast_nullable_to_non_nullable
               as int,
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -123,7 +134,8 @@ class _$WorkoutSessionEntityImpl extends _WorkoutSessionEntity {
   const _$WorkoutSessionEntityImpl(
       {required this.repCount,
       required this.startedAt,
-      required this.secondsElapsed})
+      required this.secondsElapsed,
+      this.id})
       : super._();
 
   factory _$WorkoutSessionEntityImpl.fromJson(Map<String, dynamic> json) =>
@@ -135,6 +147,8 @@ class _$WorkoutSessionEntityImpl extends _WorkoutSessionEntity {
   final DateTime startedAt;
   @override
   final int secondsElapsed;
+  @override
+  final String? id;
 
   @JsonKey(ignore: true)
   @override
@@ -156,7 +170,8 @@ abstract class _WorkoutSessionEntity extends WorkoutSessionEntity {
   const factory _WorkoutSessionEntity(
       {required final int repCount,
       required final DateTime startedAt,
-      required final int secondsElapsed}) = _$WorkoutSessionEntityImpl;
+      required final int secondsElapsed,
+      final String? id}) = _$WorkoutSessionEntityImpl;
   const _WorkoutSessionEntity._() : super._();
 
   factory _WorkoutSessionEntity.fromJson(Map<String, dynamic> json) =
@@ -168,6 +183,8 @@ abstract class _WorkoutSessionEntity extends WorkoutSessionEntity {
   DateTime get startedAt;
   @override
   int get secondsElapsed;
+  @override
+  String? get id;
   @override
   @JsonKey(ignore: true)
   _$$WorkoutSessionEntityImplCopyWith<_$WorkoutSessionEntityImpl>

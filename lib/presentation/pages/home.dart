@@ -26,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final AuthUser? authUser;
   DataLoader<List<WorkoutSessionEntity>> dataLoader =
       const DataLoader.initial();
+  late final WorkoutUseCases workoutUseCases;
 
   @override
   void initState() {
@@ -33,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     authRepository = Injector.resolve<AuthRepository>();
     authUser = authRepository.currentUser();
+    workoutUseCases = WorkoutUseCases(Injector.resolve<WorkoutSessionRepository>());
   }
 
   @override
@@ -69,8 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: FutureBuilder(
-        future: WorkoutUseCases(Injector.resolve<WorkoutSessionRepository>())
-            .loadWorkouts(),
+        future: workoutUseCases.loadWorkouts(),
         builder: (ctx, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             dataLoader = const DataLoader.loading();
@@ -94,6 +95,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     leading: const CircleAvatar(
                       child: Icon(Icons.accessibility_new, size: 30,),
                     ),
+                    trailing: IconButton(onPressed: () async {
+                      await workoutUseCases.deleteWorkout(record);
+                      setState(() {});
+                    }, icon: const Icon(Icons.delete, color: Colors.red,)),
                   );
                 },
                 itemCount: records.length,
@@ -127,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-          );
+          ).padding(bottom: 50);
         },
       ),
       floatingActionButton: FilledButton.icon(
@@ -137,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
         label: const Text('New Session'),
         icon: const Icon(Icons.add),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }

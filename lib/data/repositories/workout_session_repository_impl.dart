@@ -20,6 +20,11 @@ class WorkoutSessionRepositoryImpl implements WorkoutSessionRepository {
     return await db.loadWorkouts();
   }
 
+  @override
+  Future<void> deleteWorkout(String id) async {
+    await db.deleteWorkout(id);
+  }
+
 
 
 }

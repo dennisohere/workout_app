@@ -19,8 +19,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   ValueNotifier<int> repCount = ValueNotifier(0);
   ValueNotifier<int> secondsElapsed = ValueNotifier(0);
   CameraController? controller;
-  bool started = false;
   Timer? timer;
+  WorkoutState workoutState = WorkoutState.stopped;
+  bool get started => workoutState == WorkoutState.started;
 
 
   ValueNotifier<CustomPaint?> customPaintNotifier = ValueNotifier(null);
@@ -40,12 +41,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         controller = camController;
         setState(() {});
       },
-      onWorkoutStarted: (isStarted){
+      onStateChanged: (state){
         setState(() {
-          started = isStarted;
+          workoutState = state;
         });
         if(started){
           secondsElapsed.value = 0;
+          repCount.value = 0;
           initTimer();
         } else {
           timer?.cancel();
@@ -59,6 +61,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       secondsElapsed.value++;
     });
   }
+
+
 
 
   @override
@@ -82,7 +86,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           ValueListenableBuilder(
               valueListenable: customPaintNotifier,
               builder: (_, customPaint, child) {
-                if (customPaint == null || !started) {
+                if (customPaint == null || workoutState == WorkoutState.stopped) {
                   return const SizedBox.shrink();
                 }
                 return Positioned(
@@ -98,22 +102,32 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               mainAxisSize: MainAxisSize.min,
               children: [
-                ValueListenableBuilder(valueListenable: repCount, builder: (_, count, child){
-                  return Text('$count')
-                      .fontSize(170)
-                      .textColor(Colors.white)
-                      .padding(all: 70)
-                      .decorated(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white),
-                  );
-                }),
-                ValueListenableBuilder(valueListenable: secondsElapsed, builder: (_, elapsed, child){
-                  return _RepTimer(secondsElapsed: elapsed, key: UniqueKey(),);
-                }),
+                if(workoutState != WorkoutState.waiting) ...[
+                  ValueListenableBuilder(valueListenable: repCount, builder: (_, count, child){
+                    return Text('$count')
+                        .fontSize(170)
+                        .textColor(Colors.white)
+                        .padding(all: 70)
+                        .decorated(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white),
+                    );
+                  }),
+
+                  ValueListenableBuilder(valueListenable: secondsElapsed, builder: (_, elapsed, child){
+                    return _RepTimer(secondsElapsed: elapsed, key: UniqueKey(),);
+                  }),
+                ],
+
+                if(workoutState == WorkoutState.waiting) ...[
+                  _WaitCountdown(waitTime: workoutService.waitTimeInSeconds),
+                ],
+
                 const SizedBox(
                   height: 20,
                 ),
+
+
                 OutlinedButton.icon(
                   onPressed: () async {
                     workoutService.toggleWorkout();
@@ -200,4 +214,49 @@ class _RepTimer extends StatelessWidget {
       ],
     );
   }
+}
+
+
+class _WaitCountdown extends StatefulWidget {
+  final int waitTime;
+
+  const _WaitCountdown({super.key, required this.waitTime,});
+
+  @override
+  State<_WaitCountdown> createState() => _WaitCountdownState();
+}
+
+class _WaitCountdownState extends State<_WaitCountdown> {
+  late int count;
+  late Timer timer;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    count = widget.waitTime;
+    timer = Timer.periodic(const Duration(seconds: 1), (time){
+      count--;
+      if(count <= 0 ){
+        timer.cancel();
+      }
+      setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text('Ready...$count')
+        .fontSize(100)
+        .textColor(Colors.white)
+        .padding(all: 70);
+  }
+
+
+  @override
+  void dispose() {
+    timer.cancel();
+    super.dispose();
+  }
+
 }
